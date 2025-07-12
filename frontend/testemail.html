@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Email Sender</title>
+</head>
+<body>
+    <button onclick="sendEmail()">Send Test Email</button>
+
+    <script>
+        async function sendEmail() {
+            const response = await fetch('http://localhost:3000/send-email', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    to: 'shivigupta31121988@gmail.com',
+                    subject: 'Test Email from Browser',
+                    text: 'This is a test email sent from a browser!'
+                })  
+            });
+
+            const result = await response.text();
+            alert(result);
+        }
+    </script>
+</body>
+</html>
