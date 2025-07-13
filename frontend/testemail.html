@@ -1,29 +1,210 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <title>Email Sender</title>
+    <title>Safe Odisha For Her</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+    <script src="https://smtpjs.com/v3/smtp.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .alert {
+            display: none;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
 </head>
+
 <body>
-    <button onclick="sendEmail()">Send Test Email</button>
+    <div class="container w-full max-w-lg mx-auto px-2 sm:px-4 py-4">
+        <h1 class="text-2xl font-bold mb-4">Complaint Portal</h1>
+        <div id="complaintForm">
+            <div class="mb-4 sm:mb-6">
+                <label for="name" class="block text-sm font-medium">Name</label>
+                <input type="text" id="name" class="w-full p-2 border rounded" required>
+            </div>
+            <div class="mb-4 sm:mb-6">
+                <label for="region">Select Your Region</label>
+                <select id="region" class="w-full p-2 border rounded">
+                    <option value="" disabled selected>Select</option>
+                    <option value="Bhawanipatna">Bhawanipatna</option>
+                    <option value="Kesinga">Kesinga</option>
+                    <option value="T. Rampur">T. Rampur</option>
+                    <option value="Lanjigarh">Lanjigarh</option>
+                    <option value="Golamunda">Golamunda</option>
+                    <option value="Jaipatna">Jaipatna</option>
+                    <option value="M. Rampur">M. Rampur</option>
+                    <option value="Narla">Narla</option>
+                    <option value="Junagarh">Junagarh</option>
+                    <option value="Dharmagarh">Dharmagarh</option>
+                    <option value="Koksara">Koksara</option>
+                    <option value="Kalampur">Kalampur</option>
+                    <option value="Karlamunda">Karlamunda</option>
+                </select>
+            </div>
+            <div class="mb-4 sm:mb-6">
+                <label for="abuseType">Type of Abuse</label>
+                <select id="abuseType" class="w-full p-2 border rounded">
+                    <option value="" disabled selected>Select</option>
+                    <option value="physical">Physical</option>
+                    <option value="verbal">Verbal/Emotional</option>
+                    <option value="financial">Financial</option>
+                    <option value="sexual">Sexual</option>
+                    <option value="online">Online Harassment</option>
+                </select>
+            </div>
+            <div class="mb-4 sm:mb-6">
+                <label for="frequency">Frequency of Abuse</label>
+                <select id="frequency" class="w-full p-2 border rounded">
+                    <option value="" disabled selected>Select</option>
+                    <option>Every time we have an argument</option>
+                    <option>Once or twice a week</option>
+                    <option>More than twice a week</option>
+                    <option>Rarely</option>
+                    <option>This is the first time</option>
+                </select>
+            </div>
+            <div class="mb-4 sm:mb-6">
+                <label for="relationship">Relationship with Abuser</label>
+                <select id="relationship" class="w-full p-2 border rounded">
+                    <option value="" disabled selected>Select</option>
+                    <option>Partner (Boyfriend)</option>
+                    <option>Husband</option>
+                    <option>In-laws</option>
+                    <option>Stranger</option>
+                    <option>Employer/Colleague</option>
+                    <option>Father</option>
+                    <option>Mother</option>
+                    <option>Brother</option>
+                    <option>Sister</option>
+                </select>
+            </div>
+            <div class="mb-4 sm:mb-6">
+                <label for="place">Place of Violence</label>
+                <select id="place" class="w-full p-2 border rounded">
+                    <option value="" disabled selected>Select</option>
+                    <option>Matrimonial Home</option>
+                    <option>Parental Home</option>
+                    <option>Live-in setup</option>
+                    <option>Public space</option>
+                    <option>Workplace</option>
+                    <option>Educational Institution</option>
+                    <option>Home</option>
+                    <option>Other</option>
+                </select>
+            </div>
+            <div class="mb-4 sm:mb-6">
+                <label for="complaint" class="block text-sm font-medium">Complaint</label>
+                <textarea id="complaint" class="w-full p-2 border rounded" rows="5" required></textarea>
+            </div>
+            <button onclick="submitComplaint()"
+                class="w-full sm:w-auto bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Submit</button>
+        </div>
+        <div id="alert" class="alert w-full text-center"></div>
+    </div>
 
     <script>
-        async function sendEmail() {
+        async function sendEmail(body, recipient, subject) {
             const response = await fetch('https://safe-odisha-for-her.onrender.com/send-email', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    to: 'shivigupta31121988@gmail.com',
-                    subject: 'Test Email from Browser',
-                    text: 'This is a test email sent from a browser!'
-                })  
+                    to: recipient,
+                    subject: subject,
+                    text: body
+                })
             });
 
             const result = await response.text();
             alert(result);
         }
+
+        let pyodide;
+
+        // Load Pyodide for generating complaint IDs
+        async function loadPyodideAndGenerateID() {
+            pyodide = await loadPyodide();
+            await pyodide.loadPackage('micropip');
+            const pythonCode = `
+import random
+import string
+def generate_complaint_id():
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+            `;
+            await pyodide.runPythonAsync(pythonCode);
+            return pyodide.globals.get('generate_complaint_id')();
+        }
+
+        // Show alert
+        function showAlert(type, message) {
+            const alertDiv = document.getElementById('alert');
+            alertDiv.className = `alert ${type}`;
+            alertDiv.style.display = 'block';
+            alertDiv.textContent = message;
+        }
+
+        // Submit complaint
+        async function submitComplaint() {
+            const name = document.getElementById('name').value;
+            const complaint = document.getElementById('complaint').value;
+            const region = document.getElementById('region').value;
+            const abuseType = document.getElementById('abuseType').value;
+            const frequency = document.getElementById('frequency').value;
+            const relationship = document.getElementById('relationship').value;
+            const place = document.getElementById('place').value;
+            if (!name || !complaint || !region || !abuseType || !frequency || !relationship || !place) {
+                showAlert('error', 'Please fill out all fields.');
+                return;
+            }
+
+
+            if (!name || !complaint) {
+                showAlert('error', 'Please fill out all fields.');
+                return;
+            }
+
+            try {
+                const complaintId = await loadPyodideAndGenerateID();
+                const timestamp = new Date().toLocaleString();
+
+                // Send email via SMTP (using SMTPJS)
+                await new Promise((resolve, reject) => {
+                    const subject = `Safe Odisha For Her - New Complaint Submission - ID: ${complaintId}`;
+                    const body = `Complaint ID: ${complaintId}\n\nName: ${name}\n\nRegion: ${region}\n\nAbuse Type: ${abuseType}\n\nFrequency: ${frequency}\n\nRelationship: ${relationship}\n\nPlace: ${place}\n\nComplaint: ${complaint}\n\nTimestamp: ${timestamp}\n\n\n\nRegards,\nSafe Odisha For Her Team`;
+                    sendEmail(body, "shivigupta31121988@gmail.com", subject).then(resolve).catch(reject);
+                });
+                showAlert('success', `Complaint submitted successfully! ID: ${complaintId}`);
+                //document.getElementById('complaintForm').reset();
+            } catch (error) {
+                showAlert('error', `Error: ${error.message}`);
+            }
+        }
     </script>
+
 </body>
+
 </html>
